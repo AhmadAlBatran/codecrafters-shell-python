@@ -20,7 +20,7 @@ def main():
             if command in commands["builtin"]:
                 print(f"{command} is a shell builtin")
                 continue
-        print(f"{command}: command not found")
+        print(f"{command}: not found")
 
 
 if __name__ == "__main__":
