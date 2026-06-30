@@ -3,16 +3,13 @@ import sys
 
 def main():
     while True:
-        sys.stderr.write("$ ")
+        sys.stdout.write("$ ")
         command = input()
-        if command != "exit":
-            print(f"{command}: command not found")
-            sys.stdout.write("$ ")
-            command = input()
-        elif command == "exit":
+
+        if command == "exit":
             break
 
-    pass
+        print(f"{command}: command not found")
 
 
 if __name__ == "__main__":
