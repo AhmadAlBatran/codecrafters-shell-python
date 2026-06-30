@@ -1,11 +1,20 @@
+import os
 import sys
+
+path = os.environ.get("PATH")
+
+
+def commandtype(command, builtin, path):
+
+    if command in builtin:
+        return "builtin"
+    else:
+        pass
 
 
 def main():
-    commands = {
-        "builtin": "[echo, type, exit]",
-        "executable": "",
-    }
+    builtin = ["echo", "type", "exit"]
+
     while True:
         sys.stdout.write("$ ")
         command = input()
@@ -17,7 +26,7 @@ def main():
             continue
         if command.startswith("type"):
             command = command[5:]
-            if command in commands["builtin"]:
+            if command in builtin:
                 print(f"{command} is a shell builtin")
                 continue
         print(f"{command}: not found")
