@@ -2,13 +2,13 @@ import sys
 
 
 def main():
-    sys.stdout.write("$ ")
     while True:
-        sys.stdout.write("$ ")
-        command = input()
-        if command == "exit":
+        if command != "exit":
+            sys.stdout.write("$ ")
+            command = input()
+            print(f"{command}: command not found")
+        else:
             break
-        print(f"{command}: command not found")
 
     pass
 
