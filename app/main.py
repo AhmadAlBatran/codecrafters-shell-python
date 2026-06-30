@@ -9,7 +9,7 @@ def main():
             print(f"{command}: command not found")
             sys.stdout.write("$ ")
             command = input()
-        else:
+        elif command == "exit":
             break
 
     pass
