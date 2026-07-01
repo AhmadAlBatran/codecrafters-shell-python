@@ -14,7 +14,7 @@ def handle_type(cmd):
         print(f"{cmd}: not found")
 
 
-def handle_builtin(args):
+def runcommand(args):
     match args[0]:
         case "exit":
             sys.exit(0)
@@ -23,8 +23,15 @@ def handle_builtin(args):
             print(txt)
         case "type":
             handle_type(args[1])
-        case _:
-            print(f"{args[0]}: command not found")
+        case _: #incase of not built in commands scan path untill you find it
+            if path := shutil.which(args[0])
+                pid = os.fork()
+                if pid == 0:
+                    os.execvp(args[0], args)
+                else:
+                    os.waitpid(pid, 0)
+            else:
+                print(f"{args[0]}: command not found")
 
 
 def main():
@@ -32,7 +39,7 @@ def main():
         sys.stdout.write("$ ")
         command = input("")
         arguments = command.split(" ")
-        handle_builtin(arguments)
+        runcommand(arguments)
 
 
 if __name__ == "__main__":
