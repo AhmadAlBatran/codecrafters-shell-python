@@ -21,7 +21,7 @@ def cd(args):
         try:
             os.chdir(args[0])
         except FileNotFoundError:
-            print(f"{args[0]}: no such file or directory")
+            print(f"{args[0]}: No such file or directory")
 
 
 def runcommand(args):
