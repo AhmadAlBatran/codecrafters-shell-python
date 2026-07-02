@@ -14,7 +14,7 @@ def generate_arguments(command):
     for i in range(len(command)):
         char = command[i]
 
-        if char == "/":
+        if char == "\\":
             i += 1
             current_token += command[i]
             continue
