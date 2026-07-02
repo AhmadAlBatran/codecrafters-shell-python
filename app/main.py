@@ -17,6 +17,8 @@ def handle_type(cmd):
 def cd(args):
     if len(args) == 0:
         os.chdir(os.path.expanduser("~"))
+    elif args[0] == "~":
+        os.chdir(os.path.expanduser("~"))
     else:
         try:
             os.chdir(args[0])
