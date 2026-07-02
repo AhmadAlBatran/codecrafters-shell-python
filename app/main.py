@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 
-commands = ["exit", "echo", "type"]
+commands = ["exit", "echo", "type", "pwd"]
 
 
 def handle_type(cmd):
