@@ -14,6 +14,16 @@ def handle_type(cmd):
         print(f"{cmd}: not found")
 
 
+def cd(args):
+    if len(args) == 0:
+        os.chdir(os.path.expanduser("~"))
+    else:
+        try:
+            os.chdir(args[0])
+        except FileNotFoundError:
+            print(f"{args[0]}: no such file or directory")
+
+
 def runcommand(args):
     match args[0]:
         case "exit":
@@ -26,7 +36,7 @@ def runcommand(args):
         case "pwd":
             print(os.getcwd())
         case "cd":
-            os.chdir(args[1])
+            cd(args[1:])
         case _:  # incase of not built in commands scan path untill you find it
             if path := shutil.which(args[0]):
                 pid = os.fork()
