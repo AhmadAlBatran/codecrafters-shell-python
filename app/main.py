@@ -2,7 +2,33 @@ import os
 import shutil
 import sys
 
-commands = ["exit", "echo", "type", "pwd"]
+commands = ["exit", "echo", "type", "pwd", "cd"]
+
+
+def generate_arguments(command):
+    args = []
+    current_token = ""
+    in_single_quote = False
+    in_double_quote = False
+
+    for i in range(len(command)):
+        char = command[i]
+
+        if char == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+        elif char == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+        elif char == " " and not in_single_quote and not in_double_quote:
+            if current_token:
+                args.append(current_token)
+                current_token = ""
+        else:
+            current_token += char
+
+    if current_token:
+        args.append(current_token)
+
+    return args
 
 
 def handle_type(cmd):
@@ -27,6 +53,8 @@ def cd(args):
 
 
 def runcommand(args):
+    args = generate_arguments(" ".join(args))
+
     match args[0]:
         case "exit":
             sys.exit(0)
@@ -53,7 +81,8 @@ def runcommand(args):
 def main():
     while True:
         sys.stdout.write("$ ")
-        command = input("")
+        command = input()
+
         arguments = command.split(" ")
         runcommand(arguments)
 
