@@ -23,6 +23,8 @@ def runcommand(args):
             print(txt)
         case "type":
             handle_type(args[1])
+        case "pwd":
+            print(os.getcwd())
         case _:  # incase of not built in commands scan path untill you find it
             if path := shutil.which(args[0]):
                 pid = os.fork()
