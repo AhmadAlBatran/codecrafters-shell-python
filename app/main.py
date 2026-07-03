@@ -20,7 +20,7 @@ def generate_arguments(command):
             current_token += char
             continue
 
-        elif char == "\\":
+        elif char == "\\" and not in_single_quote:
             skip = True
             continue
         elif char == "'" and not in_double_quote:
