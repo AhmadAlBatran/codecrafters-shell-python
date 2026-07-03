@@ -10,13 +10,18 @@ def generate_arguments(command):
     current_token = ""
     in_single_quote = False
     in_double_quote = False
+    skip = False
 
     for i in range(len(command)):
         char = command[i]
 
-        if char == "\\":
-            i += 1
-            current_token += command[i]
+        if skip:
+            skip = False
+            current_token += char
+            continue
+
+        elif char == "\\":
+            skip = True
             continue
         elif char == "'" and not in_double_quote:
             in_single_quote = not in_single_quote
