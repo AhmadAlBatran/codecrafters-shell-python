@@ -61,21 +61,40 @@ def cd(args):
             print(f"{args[0]}: No such file or directory")
 
 
-def runcommand(args):
-    args = generate_arguments(" ".join(args))
+def echo(args) -> str:
+    txt = " ".join(args)
+    return txt
 
+
+def pwd() -> str:
+    return os.getcwd()
+
+
+def runcommand(args):
+    if ">" in args:
+        output_file = args[args.index(">") + 1]
+        args = args[: args.index(">")]
+        with open(output_file, "w") as f:
+            f.write(echo(args[1:]))
+        return
+    if "<" in args:
+        input_file = args[args.index("<") + 1]
+        args = args[: args.index("<")]
+        with open(input_file, "r") as f:
+            args[1:] = f.read().split()
+        return
     match args[0]:
         case "exit":
             sys.exit(0)
         case "echo":
-            txt = " ".join(args[1:])
-            print(txt)
+            print(echo(args[1:]))
         case "type":
             handle_type(args[1])
         case "pwd":
-            print(os.getcwd())
+            print(pwd())
         case "cd":
             cd(args[1:])
+
         case _:  # incase of not built in commands scan path untill you find it
             if path := shutil.which(args[0]):
                 pid = os.fork()
@@ -92,8 +111,8 @@ def main():
         sys.stdout.write("$ ")
         command = input()
 
-        arguments = command.split(" ")
-        runcommand(arguments)
+        args = generate_arguments(command)
+        runcommand(args)
 
 
 if __name__ == "__main__":
