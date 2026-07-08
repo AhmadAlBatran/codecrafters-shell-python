@@ -102,9 +102,8 @@ def runcommand(args):
                     result = subprocess.run(
                         args, capture_output=True, text=True, check=True
                     )
-
                     command_output = result.stdout
-                    return command_output
+                    return command_output.strip()
 
                 except subprocess.CalledProcessError as e:
                     return f"Command failed with error: {e.stderr}"
