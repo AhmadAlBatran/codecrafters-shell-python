@@ -1,8 +1,17 @@
 import os
 import shutil
+import subprocess
 import sys
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
+
+
+def handle_redirection(args):
+    output_file = args[args.index(">") + 1]
+    input = runcommand(args[: args.index(">")])
+    with open(output_file, "w") as f:
+        f.write(input)
+    return
 
 
 def generate_arguments(command):
@@ -42,11 +51,13 @@ def generate_arguments(command):
 
 def handle_type(cmd):
     if cmd in commands:
-        print(f"{cmd} is a shell builtin")
+        return f"{cmd} is a shell builtin"
+    elif len(cmd) == 0:
+        return ""
     elif path := shutil.which(cmd):
-        print(f"{cmd} is {path}")
+        return f"{cmd} is {path}"
     else:
-        print(f"{cmd}: not found")
+        return f"{cmd}: not found"
 
 
 def cd(args):
@@ -66,53 +77,53 @@ def echo(args) -> str:
     return txt
 
 
-def pwd() -> str:
-    return os.getcwd()
-
-
 def runcommand(args):
-    if ">" in args:
-        output_file = args[args.index(">") + 1]
-        args = args[: args.index(">")]
-        with open(output_file, "w") as f:
-            f.write(echo(args[1:]))
-        return
-    if "<" in args:
-        input_file = args[args.index("<") + 1]
-        args = args[: args.index("<")]
-        with open(input_file, "r") as f:
-            args[1:] = f.read().split()
-        return
+    if ">" in args or "<" in args:
+        handle_redirection(args)
+
     match args[0]:
         case "exit":
             sys.exit(0)
         case "echo":
-            print(echo(args[1:]))
+            return echo(args[1:])
         case "type":
-            handle_type(args[1])
+            if len(args) == 1:
+                return ""
+            return handle_type(args[1])
         case "pwd":
-            print(pwd())
+            return os.getcwd()
         case "cd":
             cd(args[1:])
 
-        case _:  # incase of not built in commands scan path untill you find it
+        case _:  # in case of non-built-in commands
             if path := shutil.which(args[0]):
-                pid = os.fork()
-                if pid == 0:
-                    os.execvp(args[0], args)
-                else:
-                    os.waitpid(pid, 0)
+                try:
+                    args[0] = path
+                    result = subprocess.run(
+                        args, capture_output=True, text=True, check=True
+                    )
+
+                    command_output = result.stdout
+                    return command_output
+
+                except subprocess.CalledProcessError as e:
+                    return f"Command failed with error: {e.stderr}"
             else:
-                print(f"{args[0]}: command not found")
+                return f"{args[0]}: command not found"
 
 
 def main():
     while True:
         sys.stdout.write("$ ")
         command = input()
-
         args = generate_arguments(command)
-        runcommand(args)
+        if ">" in args or "<" in args:
+            handle_redirection(args)
+            continue
+        else:
+            output = runcommand(args)
+            if output:
+                print(output)
 
 
 if __name__ == "__main__":
