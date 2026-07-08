@@ -116,7 +116,7 @@ def main():
         sys.stdout.write("$ ")
         command = input()
         args = generate_arguments(command)
-        if ">" in args or "<" in args:
+        if ">" in args or "1>" in args:
             handle_redirection(args)
             continue
         else:
