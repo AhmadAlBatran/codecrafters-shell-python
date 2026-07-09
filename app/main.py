@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
-redirect_operators = [">", "1>"]
+redirect_operators = [">", "1>", "2>"]
 
 
 @dataclass
@@ -59,15 +59,42 @@ def runcommand(args):
 def handle_redirection(args):
     op = next((o for o in redirect_operators if o in args), None)
     if op is None:
-        return CommandResult(success=True, return_code=0)
+        return runcommand(args)  # no redirection, just run normally
 
     ind = args.index(op)
+    if ind + 1 >= len(args):
+        return CommandResult(
+            success=False,
+            return_code=1,
+            stderr=f"shell: syntax error near unexpected token `{op}'\n",
+        )
+
     output_file = args[ind + 1]
     result = runcommand(args[:ind])
 
+    match op:
+        case ">" | "1>":
+            content = result.stdout
+            mode = "w"
+        case ">>" | "1>>":
+            content = result.stdout
+            mode = "a"
+        case "2>":
+            content = result.stderr
+            mode = "w"
+        case "2>>":
+            content = result.stderr
+            mode = "a"
+        case "&>" | ">&":
+            content = result.stdout + result.stderr
+            mode = "w"
+        case _:
+            content = result.stdout
+            mode = "w"
+
     try:
-        with open(output_file, "w") as f:
-            f.write(result.stdout)
+        with open(output_file, mode) as f:
+            f.write(content)
     except Exception as e:
         file_error = f"shell: {output_file}: {str(e)}\n"
         result.stderr += file_error
@@ -77,8 +104,8 @@ def handle_redirection(args):
     return CommandResult(
         success=result.success,
         return_code=result.return_code,
-        stdout="",
-        stderr=result.stderr,
+        stdout="" if op != "2>" and op != "2>>" else result.stdout,
+        stderr="" if op in (">", ">>", "1>", "1>>") else result.stderr,
     )
 
 
@@ -175,6 +202,9 @@ def main():
                 print(result.stdout.rstrip())
             if result.stderr:
                 print(result.stderr.rstrip(), file=sys.stderr)
+            continue
+        elif "2>" in args:
+            result = handle_redirection(args)
             continue
 
         result = runcommand(args)
