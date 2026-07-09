@@ -170,7 +170,11 @@ def main():
             continue
 
         if ">" in args or "1>" in args:
-            handle_redirection(args)
+            result = handle_redirection(args)
+            if result.stdout:
+                print(result.stdout.rstrip())
+            if result.stderr:
+                print(result.stderr.rstrip(), file=sys.stderr)
             continue
 
         result = runcommand(args)
