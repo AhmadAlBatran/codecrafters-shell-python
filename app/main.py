@@ -19,7 +19,7 @@ def handle_redirection(args):
     result = runcommand(args[:ind])
 
     if not result["success"]:
-        print(result["output"], file=sys.stderr)
+        print(result["output"], file=sys.stderr, end="")
         return
 
     with open(output_file, "w") as f:
