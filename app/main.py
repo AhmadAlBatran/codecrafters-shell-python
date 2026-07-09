@@ -8,7 +8,6 @@ commands = ["exit", "echo", "type", "pwd", "cd"]
 redirect_operators = [">", "1>"]
 
 
-# 1. This acts as your rigid contract/blueprint. No OOP logic, just a container.
 @dataclass
 class CommandResult:
     success: bool
@@ -20,24 +19,27 @@ class CommandResult:
 def handle_redirection(args):
     op = next((o for o in redirect_operators if o in args), None)
     if op is None:
-        return
+        return CommandResult(success=True, return_code=0)
 
     ind = args.index(op)
     output_file = args[ind + 1]
-
-    # Run everything before the '>' operator
     result = runcommand(args[:ind])
-
-    # Using object dot-notation (.success / .stderr) makes this highly readable
-    if not result.success:
-        print(result.stderr.rstrip(), file=sys.stderr)
-        return
 
     try:
         with open(output_file, "w") as f:
             f.write(result.stdout)
     except Exception as e:
-        print(f"shell: {output_file}: {str(e)}", file=sys.stderr)
+        file_error = f"shell: {output_file}: {str(e)}\n"
+        result.stderr += file_error
+        result.success = False
+        result.return_code = 1
+
+    return CommandResult(
+        success=result.success,
+        return_code=result.return_code,
+        stdout="",
+        stderr=result.stderr,
+    )
 
 
 def generate_arguments(command):
@@ -94,7 +96,6 @@ def cd(args):
     )
     try:
         os.chdir(target_dir)
-        # Because stdout/stderr default to "", we don't even have to pass them here!
         return CommandResult(success=True, return_code=0)
     except FileNotFoundError:
         return CommandResult(
@@ -176,7 +177,6 @@ def main():
 
         result = runcommand(args)
 
-        # Super clean printing logic using fields instead of dictionary string keys
         if result.stdout:
             print(result.stdout.rstrip())
         if result.stderr:
