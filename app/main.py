@@ -4,10 +4,11 @@ import subprocess
 import sys
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
+redirect_operators = [">", "1>"]
 
 
 def handle_redirection(args):
-    redirect_operators = [">", "1>"]
+
     op = next((o for o in redirect_operators if o in args), None)
 
     if op is None:
