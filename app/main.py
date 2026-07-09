@@ -7,17 +7,22 @@ commands = ["exit", "echo", "type", "pwd", "cd"]
 
 
 def handle_redirection(args):
-    if ">" in args:
-        ind = args.index(">")
-    elif "1>" in args:
-        ind = args.index("1>")
-    else:
+    redirect_operators = [">", "1>"]
+    op = next((o for o in redirect_operators if o in args), None)
+
+    if op is None:
         return "No redirection found"
+
+    ind = args.index(op)
     output_file = args[ind + 1]
-    input = runcommand(args[:ind])
+    result = runcommand(args[:ind])
+
+    if not result["success"]:
+        print(result["output"], file=sys.stderr)
+        return
+
     with open(output_file, "w") as f:
-        f.write(input)
-    return
+        f.write(result["output"])
 
 
 def generate_arguments(command):
@@ -84,23 +89,20 @@ def echo(args) -> str:
 
 
 def runcommand(args):
-    if ">" in args or "<" in args:
-        handle_redirection(args)
-
     match args[0]:
         case "exit":
             sys.exit(0)
         case "echo":
-            return echo(args[1:])
+            return {"success": True, "output": echo(args[1:])}
         case "type":
             if len(args) == 1:
-                return ""
-            return handle_type(args[1])
+                return {"success": True, "output": ""}
+            return {"success": True, "output": handle_type(args[1])}
         case "pwd":
-            return os.getcwd()
+            return {"success": True, "output": os.getcwd()}
         case "cd":
             cd(args[1:])
-
+            return {"success": True, "output": ""}
         case _:  # in case of non-built-in commands
             if path := shutil.which(args[0]):
                 try:
@@ -108,13 +110,11 @@ def runcommand(args):
                     result = subprocess.run(
                         args, capture_output=True, text=True, check=True
                     )
-                    command_output = result.stdout
-                    return command_output.strip()
-
+                    return {"success": True, "output": result.stdout.strip()}
                 except subprocess.CalledProcessError as e:
-                    return e.stderr
+                    return {"success": False, "output": e.stderr}
             else:
-                return f"{args[0]}: command not found"
+                return {"success": False, "output": f"{args[0]}: command not found"}
 
 
 def main():
@@ -125,10 +125,11 @@ def main():
         if ">" in args or "1>" in args:
             handle_redirection(args)
             continue
+        result = runcommand(args)
+        if result["success"]:
+            print(result["output"].strip())
         else:
-            output = runcommand(args)
-            if output:
-                print(output)
+            print(result["output"].strip())
 
 
 if __name__ == "__main__":
