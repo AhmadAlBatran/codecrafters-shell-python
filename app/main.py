@@ -112,7 +112,7 @@ def runcommand(args):
                     return command_output.strip()
 
                 except subprocess.CalledProcessError as e:
-                    return f"Command failed with error: {e.stderr}"
+                    return e.stderr
             else:
                 return f"{args[0]}: command not found"
 

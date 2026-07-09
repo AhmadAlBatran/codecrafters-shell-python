@@ -1,5 +1,0 @@
-main.py
-__pycache__
-test.py
-txt.txt
-wew.sh
