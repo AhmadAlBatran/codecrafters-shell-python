@@ -15,6 +15,46 @@ class CommandResult:
     stdout: str = ""
     stderr: str = ""
 
+def runcommand(args):
+    if not args:
+        return CommandResult(success=True, return_code=0)
+
+    match args[0]:
+        case "exit":
+            sys.exit(0)
+
+        case "echo":
+            txt = " ".join(args[1:])
+            return CommandResult(success=True, return_code=0, stdout=txt)
+
+        case "type":
+            if len(args) == 1:
+                return CommandResult(success=True, return_code=0, stdout="")
+            return handle_type(args[1])
+
+        case "pwd":
+            return CommandResult(success=True, return_code=0, stdout=os.getcwd())
+
+        case "cd":
+            return cd(args[1:])
+
+        case _:  # External commands
+            if path := shutil.which(args[0]):
+                try:
+                    res = subprocess.run(
+                        args, capture_output=True, text=True, check=False
+                    )
+                    return CommandResult(
+                        success=(res.returncode == 0),
+                        return_code=res.returncode,
+                        stdout=res.stdout,
+                        stderr=res.stderr,
+                    )
+                except Exception as e:
+                    return CommandResult(success=False, return_code=1, stderr=str(e))
+            else:
+                return CommandResult(success=False,return_code=127,stderr=f"{args[0]}: command not found",)
+
 
 def handle_redirection(args):
     op = next((o for o in redirect_operators if o in args), None)
@@ -111,49 +151,7 @@ def cd(args):
         )
 
 
-def runcommand(args):
-    if not args:
-        return CommandResult(success=True, return_code=0)
 
-    match args[0]:
-        case "exit":
-            sys.exit(0)
-
-        case "echo":
-            txt = " ".join(args[1:])
-            return CommandResult(success=True, return_code=0, stdout=txt)
-
-        case "type":
-            if len(args) == 1:
-                return CommandResult(success=True, return_code=0, stdout="")
-            return handle_type(args[1])
-
-        case "pwd":
-            return CommandResult(success=True, return_code=0, stdout=os.getcwd())
-
-        case "cd":
-            return cd(args[1:])
-
-        case _:  # External commands
-            if path := shutil.which(args[0]):
-                try:
-                    res = subprocess.run(
-                        args, capture_output=True, text=True, check=False
-                    )
-                    return CommandResult(
-                        success=(res.returncode == 0),
-                        return_code=res.returncode,
-                        stdout=res.stdout,
-                        stderr=res.stderr,
-                    )
-                except Exception as e:
-                    return CommandResult(success=False, return_code=1, stderr=str(e))
-            else:
-                return CommandResult(
-                    success=False,
-                    return_code=127,
-                    stderr=f"{args[0]}: command not found",
-                )
 
 
 def main():
