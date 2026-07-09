@@ -2,28 +2,42 @@ import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
 redirect_operators = [">", "1>"]
 
 
+# 1. This acts as your rigid contract/blueprint. No OOP logic, just a container.
+@dataclass
+class CommandResult:
+    success: bool
+    return_code: int
+    stdout: str = ""
+    stderr: str = ""
+
+
 def handle_redirection(args):
-
     op = next((o for o in redirect_operators if o in args), None)
-
     if op is None:
-        return "No redirection found"
+        return
 
     ind = args.index(op)
     output_file = args[ind + 1]
+
+    # Run everything before the '>' operator
     result = runcommand(args[:ind])
 
-    if not result["success"]:
-        print(result["output"], file=sys.stderr, end="")
+    # Using object dot-notation (.success / .stderr) makes this highly readable
+    if not result.success:
+        print(result.stderr.rstrip(), file=sys.stderr)
         return
 
-    with open(output_file, "w") as f:
-        f.write(result["output"])
+    try:
+        with open(output_file, "w") as f:
+            f.write(result.stdout)
+    except Exception as e:
+        print(f"shell: {output_file}: {str(e)}", file=sys.stderr)
 
 
 def generate_arguments(command):
@@ -63,74 +77,110 @@ def generate_arguments(command):
 
 def handle_type(cmd):
     if cmd in commands:
-        return f"{cmd} is a shell builtin"
+        return CommandResult(
+            success=True, return_code=0, stdout=f"{cmd} is a shell builtin"
+        )
     elif len(cmd) == 0:
-        return ""
+        return CommandResult(success=True, return_code=0, stdout="")
     elif path := shutil.which(cmd):
-        return f"{cmd} is {path}"
+        return CommandResult(success=True, return_code=0, stdout=f"{cmd} is {path}")
     else:
-        return f"{cmd}: not found"
+        return CommandResult(success=False, return_code=1, stderr=f"{cmd}: not found")
 
 
 def cd(args):
-    if len(args) == 0:
-        os.chdir(os.path.expanduser("~"))
-    elif args[0] == "~":
-        os.chdir(os.path.expanduser("~"))
-    else:
-        try:
-            os.chdir(args[0])
-        except FileNotFoundError:
-            print(f"{args[0]}: No such file or directory")
-
-
-def echo(args) -> str:
-    txt = " ".join(args)
-    return txt
+    target_dir = (
+        os.path.expanduser("~") if len(args) == 0 or args[0] == "~" else args[0]
+    )
+    try:
+        os.chdir(target_dir)
+        # Because stdout/stderr default to "", we don't even have to pass them here!
+        return CommandResult(success=True, return_code=0)
+    except FileNotFoundError:
+        return CommandResult(
+            success=False,
+            return_code=1,
+            stderr=f"cd: {target_dir}: No such file or directory",
+        )
+    except PermissionError:
+        return CommandResult(
+            success=False,
+            return_code=126,
+            stderr=f"cd: {target_dir}: Permission denied",
+        )
 
 
 def runcommand(args):
+    if not args:
+        return CommandResult(success=True, return_code=0)
+
     match args[0]:
         case "exit":
             sys.exit(0)
+
         case "echo":
-            return {"success": True, "output": echo(args[1:])}
+            txt = " ".join(args[1:])
+            return CommandResult(success=True, return_code=0, stdout=txt)
+
         case "type":
             if len(args) == 1:
-                return {"success": True, "output": ""}
-            return {"success": True, "output": handle_type(args[1])}
+                return CommandResult(success=True, return_code=0, stdout="")
+            return handle_type(args[1])
+
         case "pwd":
-            return {"success": True, "output": os.getcwd()}
+            return CommandResult(success=True, return_code=0, stdout=os.getcwd())
+
         case "cd":
-            cd(args[1:])
-            return {"success": True, "output": ""}
-        case _:  # in case of non-built-in commands
+            return cd(args[1:])
+
+        case _:  # External commands
             if path := shutil.which(args[0]):
                 try:
-                    args[0] = path
-                    result = subprocess.run(
-                        args, capture_output=True, text=True, check=True
+                    res = subprocess.run(
+                        args, capture_output=True, text=True, check=False
                     )
-                    return {"success": True, "output": result.stdout.strip()}
-                except subprocess.CalledProcessError as e:
-                    return {"success": False, "output": e.stderr}
+                    return CommandResult(
+                        success=(res.returncode == 0),
+                        return_code=res.returncode,
+                        stdout=res.stdout,
+                        stderr=res.stderr,
+                    )
+                except Exception as e:
+                    return CommandResult(success=False, return_code=1, stderr=str(e))
             else:
-                return {"success": False, "output": f"{args[0]}: command not found"}
+                return CommandResult(
+                    success=False,
+                    return_code=127,
+                    stderr=f"{args[0]}: command not found",
+                )
 
 
 def main():
     while True:
         sys.stdout.write("$ ")
-        command = input()
+        sys.stdout.flush()
+
+        try:
+            command = input()
+        except EOFError:
+            print()
+            break
+
         args = generate_arguments(command)
+        if not args:
+            continue
+
         if ">" in args or "1>" in args:
             handle_redirection(args)
             continue
+
         result = runcommand(args)
-        if result["success"]:
-            print(result["output"].strip())
-        else:
-            print(result["output"].strip())
+
+        # Super clean printing logic using fields instead of dictionary string keys
+        if result.stdout:
+            print(result.stdout.rstrip())
+        if result.stderr:
+            print(result.stderr.rstrip(), file=sys.stderr)
 
 
 if __name__ == "__main__":
