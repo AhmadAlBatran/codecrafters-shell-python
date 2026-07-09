@@ -7,8 +7,14 @@ commands = ["exit", "echo", "type", "pwd", "cd"]
 
 
 def handle_redirection(args):
-    output_file = args[args.index(">") + 1]
-    input = runcommand(args[: args.index(">")])
+    if ">" in args:
+        ind = args.index(">")
+    elif "1>" in args:
+        ind = args.index("1>")
+    else:
+        return "No redirection found"
+    output_file = args[ind + 1]
+    input = runcommand(args[:ind])
     with open(output_file, "w") as f:
         f.write(input)
     return
