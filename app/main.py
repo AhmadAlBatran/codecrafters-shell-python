@@ -163,6 +163,25 @@ def handle_type(cmd):
     else:
         return CommandResult(success=False, return_code=1, stderr=f"{cmd}: not found")
 
+import readline
+
+def completer(text, state):
+    # Candidates = builtins + executables in PATH matching what's typed so far
+    matches = [cmd for cmd in commands if cmd.startswith(text)]
+    matches += [
+        f for d in os.environ.get("PATH", "").split(os.pathsep)
+        if os.path.isdir(d)
+        for f in os.listdir(d)
+        if f.startswith(text) and os.access(os.path.join(d, f), os.X_OK)
+    ]
+    matches = sorted(set(matches))
+    try:
+        return matches[state] + " "  # add trailing space like real shells
+    except IndexError:
+        return None
+
+readline.set_completer(completer)
+readline.parse_and_bind("tab: complete")
 
 def cd(args):
     target_dir = (
