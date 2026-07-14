@@ -181,6 +181,7 @@ def completer(text, state):
 
 readline.set_completer(completer)
 readline.parse_and_bind("tab: complete")
+sys.stdout.write("$ " + readline.get_line_buffer())
 
 def cd(args):
     target_dir = (
