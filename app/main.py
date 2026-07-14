@@ -3,6 +3,8 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
+import readline
+
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
 redirect_operators = [">", "1>", "2>",">>","1>>","2>>"]
@@ -163,10 +165,7 @@ def handle_type(cmd):
     else:
         return CommandResult(success=False, return_code=1, stderr=f"{cmd}: not found")
 
-import readline
-
 def completer(text, state):
-    # Candidates = builtins + executables in PATH matching what's typed so far
     matches = [cmd for cmd in commands if cmd.startswith(text)]
     matches += [
         f for d in os.environ.get("PATH", "").split(os.pathsep)
@@ -176,7 +175,7 @@ def completer(text, state):
     ]
     matches = sorted(set(matches))
     try:
-        return matches[state] + " "  # add trailing space like real shells
+        return matches[state] + " "
     except IndexError:
         return None
 
