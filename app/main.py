@@ -92,6 +92,10 @@ def handle_redirection(args):
             content = result.stdout
             mode = "w"
 
+
+    if content and not content.endswith("\n"):
+        content += "\n"
+
     try:
         with open(output_file, mode) as f:
             f.write(content)
