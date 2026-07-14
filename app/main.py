@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 
 commands = ["exit", "echo", "type", "pwd", "cd"]
-redirect_operators = [">", "1>", "2>"]
+redirect_operators = [">", "1>", "2>",">>","1>>","2>>"]
 
 
 @dataclass
@@ -101,11 +101,14 @@ def handle_redirection(args):
         result.success = False
         result.return_code = 1
 
+    STDOUT_OPS = (">", ">>", "1>", "1>>", "&>", ">&")
+    STDERR_OPS = ("2>", "2>>", "&>", ">&")
+
     return CommandResult(
         success=result.success,
         return_code=result.return_code,
-        stdout="" if op != "2>" and op != "2>>" else result.stdout,
-        stderr="" if op in (">", ">>", "1>", "1>>") else result.stderr,
+        stdout="" if op in STDOUT_OPS else result.stdout,
+        stderr="" if op in STDERR_OPS else result.stderr,
     )
 
 
@@ -196,16 +199,12 @@ def main():
         if not args:
             continue
 
-        if ">" in args or "1>" in args:
-            result = handle_redirection(args)
-            if result.stdout:
-                print(result.stdout.rstrip())
-            if result.stderr:
-                print(result.stderr.rstrip(), file=sys.stderr)
-            continue
-        elif "2>" in args:
-            result = handle_redirection(args)
-            continue
+        result = handle_redirection(args)
+        if result.stdout:
+            print(result.stdout.rstrip())
+        if result.stderr:
+            print(result.stderr.rstrip(), file=sys.stderr)
+        continue
 
         result = runcommand(args)
 
