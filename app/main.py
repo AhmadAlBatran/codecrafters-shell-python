@@ -165,23 +165,6 @@ def handle_type(cmd):
     else:
         return CommandResult(success=False, return_code=1, stderr=f"{cmd}: not found")
 
-def completer(text, state):
-    matches = [cmd for cmd in commands if cmd.startswith(text)]
-    matches += [
-        f for d in os.environ.get("PATH", "").split(os.pathsep)
-        if os.path.isdir(d)
-        for f in os.listdir(d)
-        if f.startswith(text) and os.access(os.path.join(d, f), os.X_OK)
-    ]
-    matches = sorted(set(matches))
-    try:
-        return matches[state] + " "
-    except IndexError:
-        return None
-
-readline.set_completer(completer)
-readline.parse_and_bind("tab: complete")
-sys.stdout.write("$ " + readline.get_line_buffer())
 
 def cd(args):
     target_dir = (
@@ -204,10 +187,38 @@ def cd(args):
         )
 
 
+def completer(text, state):
+    commands = ["echo", "exit", "type", "pwd", "cd"]
+
+    for directory in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            commands.extend(os.listdir(directory))
+        except OSError:
+            pass
+
+    matches = [cmd + " " for cmd in commands if cmd.startswith(text)]
+
+    if state < len(matches):
+        return matches[state]
+    return None
+
+def display_matches(substitution, matches, longest_match_len):
+    print()
+    print("  ".join(sorted(matches)))
+
+    sys.stdout.write("$ " + readline.get_line_buffer())
+    sys.stdout.flush()
+
+
+readline.parse_and_bind("tab: complete")
+readline.set_completer(completer)
 
 
 
 def main():
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(completer)
+    readline.set_completion_display_matches_hook(display_matches)
     while True:
         sys.stdout.write("$ ")
         sys.stdout.flush()
@@ -228,13 +239,6 @@ def main():
         if result.stderr:
             print(result.stderr.rstrip(), file=sys.stderr)
         continue
-
-        result = runcommand(args)
-
-        if result.stdout:
-            print(result.stdout.rstrip())
-        if result.stderr:
-            print(result.stderr.rstrip(), file=sys.stderr)
 
 
 if __name__ == "__main__":
